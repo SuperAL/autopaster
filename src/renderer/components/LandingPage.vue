@@ -1,7 +1,26 @@
 <template>
   <div id="wrapper">
-    <img id="logo" src="~@/assets/logo.png" alt="electron-vue">
+    <!-- <img id="logo" src="~@/assets/logo.png" alt="electron-vue"> -->
     <main>
+      <md-table v-once>
+        <md-table-header>
+          <md-table-row>
+            <md-table-head>快捷键(Shortcut)</md-table-head>
+            <md-table-head>输入(Input)</md-table-head>
+          </md-table-row>
+        </md-table-header>
+
+        <md-table-body>
+          <md-table-row v-for="(row, index) in 5" :key="index">
+            <md-table-cell @dblclick.native="editShortcut">Dessert Name</md-table-cell>
+            <md-table-cell>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat.</md-table-cell>
+          </md-table-row>
+        </md-table-body>
+      </md-table>
+
       <!-- <div class="left-side">
         <span class="title">
           Welcome to your new project!
@@ -26,24 +45,46 @@
         </div>
       </div> -->
     </main>
-    <button type="button" class="circle fixed right bottom" @click="showModal">+</button>
-    <md-button class="md-icon-button md-raised">
+    <md-button class="md-fab md-fab-bottom-right">
       <md-icon>add</md-icon>
     </md-button>
-    <input-modal :isShown="isModalShown" @close="hideModal"></input-modal>
+    <!-- <button type="button" class="circle fixed right bottom" @click="showModal">+</button>
+    
+    <input-modal :isShown="isModalShown" @close="hideModal"></input-modal> -->
   </div>
 </template>
 
 <script>
   import SystemInformation from './LandingPage/SystemInformation'
   import InputModal from './LandingPage/InputModal'
-
+  import { remote } from 'electron'
   export default {
     name: 'landing-page',
     data(){
       return {
         isModalShown: false
       }
+    },
+    created() { 
+      let globalShortcut = this.$electron.remote.globalShortcut,
+      clipboard = this.$electron.clipboard;
+      console.log(globalShortcut.isRegistered('j'));
+      console.log(globalShortcut.isRegistered('q'));
+      console.log('Ctrl+Alt+A',globalShortcut.isRegistered('Ctrl+Alt+A'));
+      console.log(globalShortcut.isRegistered('ctrl+x'));
+      var a = globalShortcut.register('ctrl+x', function() {
+          console.log('ctrl+x is pressed');
+          clipboard.writeText('Example String ctrl+x');
+        })
+      console.log(globalShortcut.isRegistered('q'));
+      var b = globalShortcut.register('ctrl+w+1', function() {
+          console.log('ctrl+w+1 is pressed');
+          clipboard.writeText('Example String ctrl+w+1');
+        })
+      var c = globalShortcut.register('Ctrl+Alt+0', function() {
+          console.log('Ctrl+Alt+0 is pressed');
+          clipboard.writeText('Example String Ctrl+Alt+0');
+        })
     },
     components: { SystemInformation, InputModal },
     methods: {
@@ -55,6 +96,9 @@
       },
       hideModal() {
         this.isModalShown = false;
+      },
+      editShortcut() {
+        console.log('editShortcut')
       }
     }
   }
@@ -89,10 +133,10 @@
     width: 420px;
   }
 
-  main {
+  /*main {
     display: flex;
     justify-content: space-between;
-  }
+  }*/
 
   main > div { flex-basis: 50%; }
 

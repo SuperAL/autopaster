@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, globalShortcut } from 'electron'
 
 /**
  * Set `__static` path to static files in production
@@ -43,6 +43,11 @@ app.on('activate', () => {
     createWindow()
   }
 })
+
+app.on('will-quit', function() {
+  // Unregister all shortcuts.
+  globalShortcut.unregisterAll();
+});
 
 /**
  * Auto Updater
