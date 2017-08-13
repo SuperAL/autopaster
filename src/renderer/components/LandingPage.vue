@@ -2,7 +2,7 @@
   <div id="wrapper">
     <!-- <img id="logo" src="~@/assets/logo.png" alt="electron-vue"> -->
     <main>
-      <md-table v-once>
+      <md-table>
         <md-table-header>
           <md-table-row>
             <md-table-head>快捷键(Shortcut)</md-table-head>
@@ -11,12 +11,9 @@
         </md-table-header>
 
         <md-table-body>
-          <md-table-row v-for="(row, index) in 5" :key="index">
-            <md-table-cell @dblclick.native="editShortcut">Dessert Name</md-table-cell>
-            <md-table-cell>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
-            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-            consequat.</md-table-cell>
+          <md-table-row v-for="(item, index) in list" :key="index" @dblclick.native="editShortcut">
+            <md-table-cell >{{ item.shortcut }}</md-table-cell>
+            <md-table-cell>{{ item.content }}</md-table-cell>
           </md-table-row>
         </md-table-body>
       </md-table>
@@ -45,9 +42,80 @@
         </div>
       </div> -->
     </main>
-    <md-button class="md-fab md-fab-bottom-right">
+    <md-button class="md-fab md-fab-bottom-right" @click="openDialog('shortcutDialog')">
       <md-icon>add</md-icon>
     </md-button>
+    <md-dialog ref="shortcutDialog">
+      <md-dialog-title>新建</md-dialog-title>
+
+      <md-dialog-content>
+        <form>
+          <div class="field-group">
+            <md-input-container>
+              <label>功能按键</label>
+              <md-select multiple v-model="funcKeysSelected" @change="selectFuncKeys">
+                <md-option v-for="(funcKey, index) in funcKeys"
+                  :value="funcKey" :key="index" :disabled="
+                  ((funcKeysSelected.indexOf(funcKey) == -1) && isFuncDisabled) 
+                  || (funcKeysSelected.indexOf('Cmd') != -1 && (funcKey == 'CmdOrCtrl' || funcKey == 'Super') ) 
+                  || (funcKeysSelected.indexOf('Ctrl') != -1 && (funcKey == 'CmdOrCtrl') ) 
+                  || (funcKeysSelected.indexOf('CmdOrCtrl') != -1 && (funcKey == 'Cmd' || funcKey == 'Ctrl' || funcKey == 'Super'))
+                  || (funcKeysSelected.indexOf('Super') != -1 && (funcKey == 'Cmd' || funcKey == 'CmdOrCtrl')) ">
+                  {{ funcKey }}
+                </md-option>
+              </md-select>
+            </md-input-container>
+            <md-input-container>
+              <label>数字</label>
+              <md-select multiple v-model="numberSelected" >
+                <md-option v-for="(number, index) in normalKeys['numbers']" :key="index"
+                  :value="number" :disabled="(number !== numberSelected[0]) && isDisabled">
+                  {{ number }}
+                </md-option>
+              </md-select>
+            </md-input-container>
+            <md-input-container>
+              <label>字母</label>
+              <md-select multiple v-model="letterSelected">
+                <md-option v-for="(letter, index) in normalKeys['letters']" :key="index"
+                  :value="letter" :disabled="(letter !== letterSelected[0]) && isDisabled">
+                  {{ letter }}
+                </md-option>
+              </md-select>
+            </md-input-container>
+            <md-input-container>
+              <label>F1~F12</label>
+              <md-select multiple v-model="letterSelected">
+                <md-option v-for="(letter, index) in normalKeys['letters']" :key="index"
+                  :value="letter" :disabled="(letter !== letterSelected[0]) && isDisabled">
+                  {{ letter }}
+                </md-option>
+              </md-select>
+            </md-input-container>
+            <md-input-container>
+              <label>其他</label>
+              <md-select multiple v-model="otherSelected">
+                <md-option v-for="(other, index) in normalKeys['others']" :key="index"
+                  :value="other" :disabled="(other !== otherSelected[0]) && isDisabled">
+                  {{ other }}
+                </md-option>
+              </md-select>
+            </md-input-container>
+          </div>
+          <md-button class="md-raised">{{ shortcut }}</md-button>
+          <md-input-container>
+            <label>内容</label>
+            <md-textarea v-model="content"></md-textarea>
+          </md-input-container>
+        </form>
+      </md-dialog-content>
+
+      <md-dialog-actions>
+        <md-button class="md-primary" @click="closeDialog('shortcutDialog')">取消</md-button>
+        <md-button class="md-primary" :disabled="isCreateDisabled" @click="saveShortcut">创建</md-button>
+      </md-dialog-actions>
+    </md-dialog>
+
     <!-- <button type="button" class="circle fixed right bottom" @click="showModal">+</button>
     
     <input-modal :isShown="isModalShown" @close="hideModal"></input-modal> -->
@@ -62,28 +130,79 @@
     name: 'landing-page',
     data(){
       return {
-        isModalShown: false
+        // 可用的功能按键
+        funcKeys: ['Cmd','Ctrl','CmdOrCtrl','Alt','Shift','Super'],
+        normalKeys: {
+          'numbers': ['0','1','2','3','4','5','6','7','8','9'],
+          'letters': ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'],
+          'functionKeys': ['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'],
+          'others': ['Plus', 'Space', 'Backspace', 'Delete', 'Insert', 'Return', 'Enter', 'Up', 'Down', 'Left', 'Right', 'Home', 'End', 'PageUp', 'PageDown', 'Esc', 'VolumeUp', 'VolumeDown', 'VolumeMute', 'MediaNextTrack', 'MediaPreviousTrack', 'MediaStop', 'MediaPlayPause']
+        },
+        list: [
+          // {
+          //   shortcut: '',
+          //   selections: [[],[],[],[]],
+          //   content: ''
+          // }
+        ],
+        funcKeysSelected: [],
+        numberSelected: [],
+        functionKeySelected: [],
+        letterSelected: [],
+        otherSelected: [],
+        content: '',
+        isModalShown: false,
+        movie: 'godfather',
+            country: '',
+            font: ''
       }
     },
+     computed: {
+      isFuncDisabled() {
+        if(this.funcKeysSelected.length > 2) {
+          return true;
+        } else {
+          return false;
+        }
+      },
+      isDisabled() {
+        if ((this.numberSelected.length > 0) || (this.letterSelected.length > 0) || (this.otherSelected.length > 0)) {
+          return true;
+        } else {
+          return false;
+        }
+      },
+      shortcut() {
+        return [...this.funcKeysSelected,...this.numberSelected,...this.letterSelected,...this.otherSelected].join('+');
+      },
+      isCreateDisabled() {
+        if (this.shortcut == "" || this.content == "") {
+          return true;
+        } else {
+          return false;
+        }
+      }
+
+  },
     created() { 
       let globalShortcut = this.$electron.remote.globalShortcut,
       clipboard = this.$electron.clipboard;
-      console.log(globalShortcut.isRegistered('j'));
-      console.log(globalShortcut.isRegistered('q'));
-      console.log('Ctrl+Alt+A',globalShortcut.isRegistered('Ctrl+Alt+A'));
-      console.log(globalShortcut.isRegistered('ctrl+x'));
-      var a = globalShortcut.register('ctrl+x', function() {
-          console.log('ctrl+x is pressed');
-          clipboard.writeText('Example String ctrl+x');
+      // console.log(globalShortcut.isRegistered('j'));
+      // console.log(globalShortcut.isRegistered('q'));
+      // console.log('Ctrl+Alt+A',globalShortcut.isRegistered('Ctrl+Alt+A'));
+      // console.log(globalShortcut.isRegistered('ctrl+x'));
+      var a = globalShortcut.register('ctrl+alt+x+c', function() {
+          console.log('ctrl+alt+x+c is pressed');
+          clipboard.writeText('Example String ctrl+alt+x+c');
         })
-      console.log(globalShortcut.isRegistered('q'));
-      var b = globalShortcut.register('ctrl+w+1', function() {
-          console.log('ctrl+w+1 is pressed');
-          clipboard.writeText('Example String ctrl+w+1');
+      // console.log(globalShortcut.isRegistered('q'));
+      var b = globalShortcut.register('ctrl+alt+shift+1', function() {
+          console.log('ctrl+alt+shift+1 is pressed');
+          clipboard.writeText('Example String ctrl+alt+shift+1');
         })
-      var c = globalShortcut.register('Ctrl+Alt+0', function() {
-          console.log('Ctrl+Alt+0 is pressed');
-          clipboard.writeText('Example String Ctrl+Alt+0');
+      var c = globalShortcut.register('0+Ctrl+Alt', function() {
+          console.log('0+Ctrl+Alt is pressed');
+          clipboard.writeText('Example String 0+Ctrl+Alt');
         })
     },
     components: { SystemInformation, InputModal },
@@ -97,8 +216,57 @@
       hideModal() {
         this.isModalShown = false;
       },
+      openDialog(ref) {
+        this.$refs[ref].open();
+      },
+      closeDialog(ref) {
+        this.$refs[ref].close();
+        this.resetDialog();
+      },
       editShortcut() {
         console.log('editShortcut')
+      },
+      selectFuncKeys(value) {
+        console.log(value)
+      },
+      saveShortcut() {
+        let vm = this;
+        console.log(`${vm.shortcut}, ${vm.content}`);
+        if (vm.isCreateDisabled) { return; }
+
+        vm.closeDialog('shortcutDialog');
+
+        let globalShortcut = vm.$electron.remote.globalShortcut,
+        clipboard = vm.$electron.clipboard;
+
+        if (globalShortcut.isRegistered(vm.shortcut)) {
+          globalShortcut.unregister(vm.shortcut);
+        }
+
+        let idx = vm.list.length;
+        let temp = globalShortcut.register(vm.shortcut, function() {
+          console.log(`${vm.list[idx].shortcut} is pressed`);
+          clipboard.writeText(vm.list[idx].content);
+        })
+        if (!temp) {
+          console.log('registration failed');
+        }
+
+        vm.list.push({
+            shortcut: vm.shortcut,
+            selections: [vm.funcKeysSelected,vm.numberSelected,vm.letterSelected,vm.otherSelected],
+            content: vm.content
+        })
+        vm.resetDialog();
+      },
+      resetDialog() {
+        let vm = this;
+        vm.funcKeysSelected = [];
+        vm.numberSelected = [];
+        vm.letterSelected = [];
+        vm.functionKeySelected = [];
+        vm.otherSelected = [];
+        vm.content = '';
       }
     }
   }
@@ -211,4 +379,22 @@
   .bottom {
     bottom: 50px;
   }
+
+  /*select*/
+  .field-group {
+    display: -ms-flexbox;
+    display: flex;
+}
+  .md-input-container {
+    width: 100%;
+    min-height: 48px;
+    margin: 4px 0 24px;
+    padding-top: 16px;
+    display: -ms-flexbox;
+    display: flex;
+    position: relative;
+}
+.md-input-container+.md-input-container {
+    margin-left: 4px;
+}
 </style>
